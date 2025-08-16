@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 from fastapi import FastAPI
-from sqlmodel import Field, SQLModel, create_engine
+from sqlmodel import Field, SQLModel, create_engine, Session, select
 
 
 # 1. データベースモデルの定義
@@ -34,3 +34,19 @@ def on_startup():
 @app.get("/")
 def read_root():
     return {"message": "Hello from limiter-extention backend"}
+
+
+# 4. APIエンドポイントの追加
+@app.post("/api/logs", response_model=Log)
+def create_log(log: Log):
+    with Session(engine) as session:
+        session.add(log)
+        session.commit()
+        session.refresh(log)
+        return log
+
+@app.get("/api/stats", response_model=List[Log])
+def read_logs():
+    with Session(engine) as session:
+        logs = session.exec(select(Log)).all()
+        return logs
