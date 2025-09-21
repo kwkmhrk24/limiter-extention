@@ -3,7 +3,10 @@
   "name": "Web Time Limiter",
   "version": "0.1.0",
   "description": "指定されたWebサイトの利用時間を制限し、長時間利用を警告する拡張機能です。",
-
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "index.html",
     "default_icon": {
@@ -12,7 +15,6 @@
       "128": "vite.svg"
     }
   },
-
   "permissions": [
     "storage",
     "tabs",

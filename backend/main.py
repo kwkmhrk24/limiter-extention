@@ -3,6 +3,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from sqlmodel import Field, SQLModel, create_engine, Session, select
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # 1. データベースモデルの定義
@@ -24,6 +25,15 @@ def create_db_and_tables():
 
 # 3. FastAPIアプリケーションの定義
 app = FastAPI()
+
+# CORSミドルウェアの追加
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # すべてのオリジンを許可（開発用）
+    allow_credentials=True,
+    allow_methods=["*"],  # すべてのHTTPメソッドを許可
+    allow_headers=["*"],  # すべてのヘッダーを許可
+)
 
 
 @app.on_event("startup")
