@@ -1,61 +1,67 @@
 import { useState, useEffect } from 'react';
-import { getStats } from './api';
-import type { Log } from './api';
 import './App.css';
 
+const STORAGE_KEY = 'targetHosts';
+
 function App() {
-  const [stats, setStats] = useState<Log[]>([]);
+  const [hosts, setHosts] = useState<string[]>([]);
+  const [newHost, setNewHost] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
+  // 初期表示時にストレージからホストリストを読み込む
   useEffect(() => {
-    // ポップアップが開かれたときに統計データを取得する
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const fetchedStats = await getStats();
-        setStats(fetchedStats);
-      } catch (e) {
-        setError('データの取得に失敗しました。');
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
+    chrome.storage.sync.get(STORAGE_KEY, (result) => {
+      setHosts(result[STORAGE_KEY] || []);
+      setLoading(false);
+    });
+  }, []);
 
-    fetchStats();
-  }, []); // 空の依存配列は、コンポーネントのマウント時に一度だけ実行されることを意味する
+  // ホストリストが変更されたらストレージに保存する
+  useEffect(() => {
+    // 初期読み込み時は保存しない
+    if (!loading) {
+      chrome.storage.sync.set({ [STORAGE_KEY]: hosts });
+    }
+  }, [hosts, loading]);
+
+  const handleAddHost = () => {
+    if (newHost && !hosts.includes(newHost)) {
+      setHosts([...hosts, newHost]);
+      setNewHost('');
+    }
+  };
+
+  const handleRemoveHost = (hostToRemove: string) => {
+    setHosts(hosts.filter(host => host !== hostToRemove));
+  };
+
+  if (loading) {
+    return <div className="App">読み込み中...</div>;
+  }
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>利用時間ログ</h1>
+        <h1>監視対象サイト設定</h1>
       </header>
       <main>
-        {loading && <p>読み込み中...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {!loading && !error && (
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>URL</th>
-                <th>利用時間 (秒)</th>
-                <th>記録日時</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.map((log) => (
-                <tr key={log.id}>
-                  <td>{log.id}</td>
-                  <td>{log.url}</td>
-                  <td>{log.duration_seconds}</td>
-                  <td>{new Date(log.created_at).toLocaleString('ja-JP')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div className="settings-form">
+          <input
+            type="text"
+            value={newHost}
+            onChange={(e) => setNewHost(e.target.value)}
+            placeholder="例: www.netflix.com"
+          />
+          <button onClick={handleAddHost}>追加</button>
+        </div>
+        <ul className="host-list">
+          {hosts.map((host) => (
+            <li key={host}>
+              <span>{host}</span>
+              <button onClick={() => handleRemoveHost(host)}>削除</button>
+            </li>
+          ))}
+        </ul>
       </main>
     </div>
   );
